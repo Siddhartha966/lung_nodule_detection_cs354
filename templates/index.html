@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>LUNA24</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='assets/favicon.ico') }}" />
+    <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic" rel="stylesheet" type="text/css" />
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" />
+</head>
+<body id="page-top">
+    <nav class="navbar navbar-expand-lg bg-secondary text-uppercase fixed-top" id="mainNav">
+        <div class="container">
+            <a class="navbar-brand" href="#page-top">LUNG NODULE DETECTION</a>
+            <button class="navbar-toggler text-uppercase font-weight-bold bg-primary text-white rounded" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="#about">how it works</a></li>
+                    <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="#contact">Upload</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <header class="masthead bg-primary text-white text-center">
+        <div class="container d-flex align-items-center flex-column">
+            <img class="masthead-avatar mb-5" src="{{ url_for('static', filename='assets/img/avataaars.jpg') }}" alt="..." />
+            <h1 class="masthead-heading text-uppercase mb-0"></h1>
+            <div class="divider-custom divider-light">
+                <div class="divider-custom-line"></div>
+                <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                <div class="divider-custom-line"></div>
+            </div>
+            <p class="masthead-subheading font-weight-light mb-0">Your Health Matters - Navigating Your Health Journey</p>
+        </div>
+    </header>
+    <section class="page-section bg-primary text-white mb-0" id="about">
+        <div class="container">
+            <h2 class="page-section-heading text-center text-uppercase text-white">About</h2>
+            <div class="divider-custom divider-light">
+                <div class="divider-custom-line"></div>
+                <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                <div class="divider-custom-line"></div>
+            </div>
+            <div class="row">
+                <div class="col-lg-4 ms-auto"><p class="lead">Early detection is key to improving outcomes for individuals at risk of lung cancer. By catching abnormalities in their earliest stages, medical interventions can be initiated promptly, increasing the chances of successful treatment and long-term survival.</p></div>
+                <div class="col-lg-4 me-auto"><p class="lead">Using our website is straightforward. Simply upload your X-ray image, and our system will analyze it using state-of-the-art image processing techniques. Within moments, you'll receive detailed insights into any detected abnormalities, providing valuable information for further medical evaluation and treatment planning.</p></div>
+            </div>
+        </div>
+    </section>
+    <section class="page-section" id="contact">
+        <div class="container">
+            <h2 class="page-section-heading text-center text-uppercase text-secondary mb-0">Upload</h2>
+            <div class="row justify-content-center">
+                <div class="col-lg-8 col-xl-7">
+                    <!-- Form for uploading image -->
+                    <form id="upload-form" enctype="multipart/form-data">
+                        <div class="form-floating mb-3">
+                            <input type="file" class="form-control" id="image-upload" accept="image/*" placeholder="Upload Image">
+                            <label for="image-upload">Upload Image</label>
+                        </div>
+                        <div class="text-center mt-4 mb-4"> <!-- Center the button -->
+                            <button class="btn btn-primary btn-xl" type="submit">Submit</button>
+                        </div>
+                    </form>
+
+                    <!-- Div for displaying prediction result -->
+                    <div id="prediction-result" style="display: none;">
+                        <h2 class="page-section-heading text-center text-uppercase text-secondary mb-0">Prediction Result</h2>
+                        <div class="row justify-content-center">
+                            <div class="col-lg-10 col-xl-9 mt-4 mb-4">
+                                <canvas id="prediction-chart" width="400" height="300"></canvas> <!-- Add canvas element for chart -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <div class="copyright py-4 text-center text-white">
+        <div class="container"><small>&copy; 2024 Lung Nodule Detection</small></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var form = document.getElementById('upload-form');
+        var predictionResult = document.getElementById('prediction-result');
+        var predictionChart = document.getElementById('prediction-chart').getContext('2d');
+        var predictionChartInstance; // Declare the chart instance variable outside the event listener
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            var fileInput = document.getElementById('image-upload');
+            var file = fileInput.files[0];
+
+            var formData = new FormData();
+            formData.append('file', file);
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/predict');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var data = JSON.parse(xhr.responseText);
+
+                    // Destroy the existing chart instance if it exists
+                    if (predictionChartInstance) {
+                        predictionChartInstance.destroy();
+                    }
+
+                    // Update the bar plot
+                    var predictionData = {
+                        labels: ['Benign', 'Malignant'],
+                        datasets: [{
+                            label: 'Probability',
+                            data: [data.benign_probability, data.malignant_probability],
+                            backgroundColor: [
+                                'rgba(75, 192, 192, 0.2)', // Benign
+                                'rgba(255, 99, 132, 0.2)'  // Malignant
+                            ],
+                            borderColor: [
+                                'rgba(75, 192, 192, 1)',   // Benign
+                                'rgba(255, 99, 132, 1)'    // Malignant
+                            ],
+                            borderWidth: 1
+                        }]
+                    };
+
+                    // Create a new chart instance
+                    predictionChartInstance = new Chart(predictionChart, {
+                        type: 'bar',
+                        data: predictionData,
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    suggestedMax: 1, // Max value on y-axis
+                                    ticks: {
+                                        stepSize: 0.2 // Decrease scale on y-axis
+                                    },
+                                    grid: {
+                                        display: false // Remove background lines
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false // Remove background lines
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // Set canvas size explicitly
+                    predictionChart.canvas.parentNode.style.width = '100%';
+                    predictionChart.canvas.parentNode.style.height = '300px';
+
+                    predictionResult.style.display = 'block'; // Show prediction result
+                } else {
+                    alert('Error occurred while making prediction.');
+                }
+            };
+            xhr.send(formData);
+        });
+    });
+    </script>
+</body>
+</html>
